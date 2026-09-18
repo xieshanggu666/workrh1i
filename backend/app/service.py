@@ -261,8 +261,10 @@ def _play(run, card_ref):
     if card["cost"] > battle.energy:
         raise InvalidAction("not enough energy")
     battle.energy -= card["cost"]
+    # 出牌标记：客户端按顺序播放“玩家施法”前摇（置于结算事件之前）
+    log = [{"phase": "play_card", "card": card_ref, "card_id": card["id"], "card_name": card["name"]}]
     try:
-        log = battle.play_card(card_ref)
+        log.extend(battle.play_card(card_ref))
     except ValueError as e:
         raise InvalidAction(str(e))
     return _after_battle_step(run, battle, log)
@@ -271,10 +273,19 @@ def _play(run, card_ref):
 def _end_turn(run):
     _battle_or_raise(run)
     battle = _load_battle(run)
-    log = ["<<end_turn>>"]
     run["reward_claimed"] = True
-    battle.end_turn()
-    # 记录敌人意图事件
+    # 敌人回合标记 + 敌人结算事件（此前丢失，导致敌方攻击完全不播放）
+    log = [{"phase": "enemy_turn"}]
+    if battle.enemy["alive"]:
+        intent = battle._enemy_intent()
+        log.append({"phase": "enemy_intent", "name": intent.get("name", ""),
+                    "action": intent["action"], "value": intent["value"]})
+        log.extend(battle.end_turn(intent))
+    else:
+        battle.end_turn()
+    # 若战斗继续，end_turn 内部已开启玩家新回合：追加回合标记供客户端播放
+    if battle.battle_result() == "ongoing":
+        log.append({"phase": "player_turn", "turn": battle.turn})
     return _after_battle_step(run, battle, log)
 
 

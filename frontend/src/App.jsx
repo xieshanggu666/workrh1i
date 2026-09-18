@@ -8,7 +8,7 @@ import ForgeView from './components/ForgeView.jsx'
 import DeckView from './components/DeckView.jsx'
 
 export default function App() {
-  const { view, setCards, cards, runId, setRunId, applyRun } = useStore()
+  const { view, setCards, cards, runId, setRunId, applyRun, battleAnimating } = useStore()
   const [seed, setSeed] = useState('')
   const [resumeId, setResumeId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -101,8 +101,8 @@ export default function App() {
         <span>金币 {view.gold}</span>
         <span>牌组 {view.deck.length}</span>
         <span className="sub">种子 {view.status === 'in_progress' && '#'}{view.seed === undefined ? '' : view.seed}</span>
-        <button className="mini" onClick={refreshRun}>刷新</button>
-        <button className="mini" onClick={newRun}>新局</button>
+        <button className="mini" onClick={refreshRun} disabled={battleAnimating} title={battleAnimating ? '结算动画播放中' : ''}>刷新</button>
+        <button className="mini" onClick={newRun} disabled={battleAnimating}>新局</button>
       </header>
 
       {ended && (

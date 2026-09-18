@@ -7,6 +7,7 @@ const initialState = {
   meta: { cards: [], enemies: [] },
   log: [],
   playing: false,
+  battleAnimating: false, // 战斗结算动画播放中（全局操作锁：禁止打断连锁/中途刷新）
   error: null,
 }
 
@@ -26,6 +27,8 @@ export const useStore = create((set, get) => ({
   setError: (err) => set({ error: err }),
 
   setPlaying: (playing) => set({ playing }),
+
+  setBattleAnimating: (battleAnimating) => set({ battleAnimating }),
 
   cardMeta: (id) => get().cards.find((c) => c.id === id) || null,
 }))

@@ -113,10 +113,32 @@ button.mini { font-size: 12px; padding: 4px 8px; }
 
 /* 战斗 */
 .battle { display: flex; flex-direction: column; gap: 10px; }
-.phaser { border: 1px solid #2b2b40; border-radius: 10px; overflow: hidden; background: #1a1a24; }
+.phaser {
+  border: 1px solid #2b2b40;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #14141f;
+  width: 100%;
+  aspect-ratio: 16 / 9;     /* 与 Phaser 设计分辨率一致，Scale.FIT 等比缩放，永远完整可见 */
+  position: relative;
+}
+.phaser canvas { display: block; width: 100% !important; height: 100% !important; }
 .handbar { display: flex; gap: 12px; align-items: flex-end; }
-.energy { background: #26263a; border: 1px solid #2b2b40; padding: 8px 12px; border-radius: 8px; white-space: nowrap; font-weight: 600; }
+.battle.is-animating .handbar { pointer-events: none; }
+.energy {
+  background: #26263a; border: 1px solid #2b2b40; padding: 8px 12px; border-radius: 8px;
+  white-space: nowrap; font-weight: 600; transition: box-shadow .2s;
+}
+.energy b { color: #ffd166; font-size: 16px; }
+.energy.syncing { box-shadow: 0 0 0 1px #7d3cff inset; color: #cbb8ff; }
 .hand { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+
+/* 发牌入场动画（续局/抽牌后手器重渲染时依次滑入） */
+@keyframes cardDeal {
+  from { transform: translateY(26px) scale(.9); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.card { animation: cardDeal .25s ease-out backwards; }
 .card {
   width: 92px; height: 128px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
   padding: 8px; border-radius: 8px; background: #1e2a44; border-color: #3a4f7a; color: #dde6ff; position: relative;
@@ -164,3 +186,10 @@ button.mini { font-size: 12px; padding: 4px 8px; }
 .fbranch .bdesc { color: #99a; font-size: 12px; }
 
 .endcard { background: #1d1d2b; border: 1px solid #2b2b40; border-radius: 12px; padding: 28px; text-align: center; max-width: 460px; }
+
+/* 动画播放中的操作锁定提示 */
+.lockhint {
+  align-self: flex-start;
+  font-size: 12px; color: #cbb8ff; background: #2b2350;
+  border: 1px solid #4a3c80; border-radius: 999px; padding: 3px 12px;
+}

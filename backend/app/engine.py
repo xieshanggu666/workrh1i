@@ -188,21 +188,33 @@ class Battle:
             _tick_statuses(ent)
         return self.to_snapshot()
 
-    def end_turn(self):
+    def end_turn(self, intent=None):
+        """敌方行动并（战斗继续时）进入玩家下一回合。
+
+        返回敌方行动的结算事件日志（按队列解析顺序），供客户端逐条播放；
+        新回合的手牌/能量等终态由 to_snapshot 快照带出。
+        intent 可由调用方预先解析（服务端需要同时展示意图名），避免重复掷骰。
+        """
         p = self.entities["player"]
         p["block"] = 0
+        log = []
         # 敌人行动
         if self.enemy["alive"]:
-            intent = self._enemy_intent()
+            intent = intent or self._enemy_intent()
             q = SettlementQueue(self)
-            q.push(EffectEvent(intent["action"], target="player", value=intent["value"],
+            eff0 = intent.get("raw_effect", {})
+            t0 = eff0.get("type", intent["action"])
+            default_target = ("enemy" if t0 in ("gain_block", "apply_status", "set_status", "heal")
+                              else "player")
+            q.push(EffectEvent(intent["action"], target=eff0.get("target", default_target),
+                               value=intent["value"],
                                source="enemy", tags=intent.get("tags", []), extra=intent.get("extra", {})))
-            self._run_sub(q, intent)
+            log = self._run_sub(q, intent)
         self.collect_deaths(self.queue)
         # 战斗未结束则进入玩家下一回合（重新获得能量并抽牌）
         if self.battle_result() == "ongoing":
             self.start_turn()
-        return self.to_snapshot()
+        return log
 
     def _enemy_intent(self):
         """确定性选择敌人意图。"""
@@ -219,9 +231,11 @@ class Battle:
         rng = _seeded_rng(self.seed, self.battle_index * 100000 + self.turn)
         skill = skills[rng.randrange(len(skills))]
         eff = skill["effects"][0]
-        return {"action": eff["type"], "value": eff.get("value", 0),
-                "tags": eff.get("tags", []), "extra": {"status": eff.get("status"),
-                                                        "ticks": eff.get("ticks")}}
+        return {"name": skill.get("name", ""), "hint": skill.get("hint", ""),
+                "action": eff["type"], "value": eff.get("value", 0),
+                "tags": eff.get("tags", []), "raw_effect": eff,
+                "extra": {"status": eff.get("status"),
+                          "ticks": eff.get("ticks")}}
 
     def _run_sub(self, q, intent=None):
         log = q.run()
