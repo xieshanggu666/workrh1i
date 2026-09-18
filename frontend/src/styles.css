@@ -114,6 +114,8 @@ button.mini { font-size: 12px; padding: 4px 8px; }
 /* 战斗 */
 .battle { display: flex; flex-direction: column; gap: 10px; }
 .phaser { border: 1px solid #2b2b40; border-radius: 10px; overflow: hidden; background: #1a1a24; }
+.phaser canvas { display: block; max-width: 100%; height: auto; }
+.hint.settling { color: #ffd166; align-self: center; white-space: nowrap; }
 .handbar { display: flex; gap: 12px; align-items: flex-end; }
 .energy { background: #26263a; border: 1px solid #2b2b40; padding: 8px 12px; border-radius: 8px; white-space: nowrap; font-weight: 600; }
 .hand { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
@@ -129,6 +131,7 @@ button.mini { font-size: 12px; padding: 4px 8px; }
 .hint { color: #778; }
 .eventlog { display: flex; gap: 6px; flex-wrap: wrap; }
 .ev { background: #26263a; padding: 3px 8px; border-radius: 6px; font-size: 12px; color: #cde; border: 1px solid #2b2b40; }
+.ev.result { border-color: #ffd166; color: #ffd166; font-weight: 600; }
 
 /* 奖励 & 结算 */
 .overlay {

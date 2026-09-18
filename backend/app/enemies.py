@@ -32,7 +32,7 @@ _enemy("goblin", "哥布林", 18, [
 _enemy("wolf", "邪狼", 24, [
     {"name": "撕咬", "hint": "造成 7 伤害", "effects": [_hit(7)]},
     {"name": "嚎叫", "hint": "获得力量", "effects": [
-        {"type": "apply_status", "status": "strength", "value": 2, "stack": "add"}]},
+        {"type": "apply_status", "status": "strength", "value": 2, "stack": "add", "target": "enemy"}]},
 ], "basic", reward_cards=["heavy_blow"], reward_gold=30)
 
 _enemy("brute", "黑铁兵", 30, [
@@ -42,12 +42,13 @@ _enemy("brute", "黑铁兵", 30, [
 
 _enemy("maggot", "疫蛆", 20, [
     {"name": "喷溅", "hint": "造成 5 伤害，施加易碎", "effects": [_hit(5), {
-        "type": "apply_status", "status": "fragile", "value": 1, "stack": "add", "ticks": 2}]},
+        "type": "apply_status", "status": "fragile", "value": 1, "stack": "add", "ticks": 2,
+        "target": "player"}]},
 ], "advanced", reward_cards=["iron_wave"], reward_gold=28)
 
 _enemy("vampire", "血裔", 26, [
     {"name": "吸取", "hint": "造成 6 伤害并回血 3", "effects": [_hit(6), {
-        "type": "heal", "value": 3}]},
+        "type": "heal", "value": 3, "target": "enemy"}]},
 ], "advanced", reward_cards=["blood_echo"], reward_gold=32)
 
 _enemy("echo_knight", "回响剑士", 34, [
@@ -74,7 +75,8 @@ _enemy("boss_ancient", "远古守卫", 60, _defender_skills, "gold",
            {"hp": 55, "name": "狂暴", "skills": [
                {"name": "狂暴尾锤", "hint": "造成 18 伤害", "effects": [_hit(18)]},
                {"name": "野蛮冲撞", "hint": "造成 12 伤害并易碎", "effects": [_hit(12), {
-                   "type": "apply_status", "status": "fragile", "value": 1, "stack": "add", "ticks": 3}]},
+                   "type": "apply_status", "status": "fragile", "value": 1, "stack": "add", "ticks": 3,
+                   "target": "player"}]},
                {"name": "石肤·多重", "hint": "获得 20 格挡", "effects": [_block(20)]},
            ]},
        ])

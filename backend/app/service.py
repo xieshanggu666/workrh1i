@@ -271,10 +271,16 @@ def _play(run, card_ref):
 def _end_turn(run):
     _battle_or_raise(run)
     battle = _load_battle(run)
-    log = ["<<end_turn>>"]
     run["reward_claimed"] = True
-    battle.end_turn()
-    # 记录敌人意图事件
+    enemy_log, intent = battle.end_turn()
+    log = []
+    if intent is not None:
+        # 敌方回合标记（含技能名），前端据此播放“敌方行动”横幅
+        log.append({"action": "enemy_turn", "target": "player", "value": 0,
+                    "source": "enemy", "tags": ["system"],
+                    "extra": {"name": intent.get("name", "")}})
+    # 敌方结算事件按结算顺序入日志，前端依序播放连锁动画
+    log.extend(enemy_log)
     return _after_battle_step(run, battle, log)
 
 

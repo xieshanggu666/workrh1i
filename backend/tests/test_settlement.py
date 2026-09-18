@@ -76,3 +76,31 @@ def test_death_interrupt_cancels_pending():
     # 连锁：死亡后不应再有指向 enemy 的结算追加（回响被打断）
     for e in b.queue.pending:
         assert e.target != "enemy"
+
+
+def test_end_turn_returns_ordered_enemy_log():
+    """敌方回合：end_turn 返回按结算顺序排列的事件日志与意图名。"""
+    b = make_battle()
+    hp_before = b.entities["player"]["hp"]
+    logs, intent = b.end_turn()
+    assert intent is not None and intent["name"]
+    # 哥布林只有“抓挠”：恰好一条指向玩家的伤害事件
+    dmg = [e for e in logs if e["action"] == "damage" and e["target"] == "player"]
+    assert len(dmg) == 1 and dmg[0]["source"] == "enemy"
+    assert b.entities["player"]["hp"] == hp_before - dmg[0]["value"]
+
+
+def test_enemy_multi_effect_skill_fully_settles():
+    """多效果技能完整结算：血裔“吸取”= 伤害 + 自身回血（此前只结算首个效果）。"""
+    run_state = {"max_health": 75, "health": 75, "deck": ["strike", "strike"],
+                 "relics": {}, "base_energy": 3}
+    b = Battle(run_state, get_enemy("vampire"), seed=1, battle_index=1)
+    b.start_turn()
+    b.enemy["hp"] = b.enemy["max_hp"] - 5  # 留出回血空间
+    hp_p, hp_e = b.entities["player"]["hp"], b.enemy["hp"]
+    logs, intent = b.end_turn()
+    assert intent["name"] == "吸取"
+    actions = [e["action"] for e in logs]
+    assert actions == ["damage", "heal"]  # 结算顺序与技能效果声明一致
+    assert b.entities["player"]["hp"] == hp_p - 6
+    assert b.enemy["hp"] == hp_e + 3
