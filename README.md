@@ -1,0 +1,67 @@
+﻿# 卡牌闯关（Card Run）
+
+基于 **React + Phaser 3 + FastAPI + SQLite** 的浏览器卡牌闯关游戏。
+
+## 功能
+- 选择路线（种子地图，3 条节点路径，最终挑战首领）
+- **卡牌锻造**：路线上的锻造节点花金币为指定卡牌选择强化分支（锋锐/强效/精炼）；同名卡为独立实例、各自保存成长状态
+- 构筑牌组、挑战精英/首领，奖励选择影响后续遭遇（遗物加伤、首领血量提升等）
+- 卡牌效果统一经 **结算队列** 处理，支持连锁触发、状态叠加、死亡打断
+- 服务端权威校验行动，防作弊；失败解锁新卡
+- 中途可续局（`POST /api/runs` → 刷新 → 回到同一节点/战斗）；种子回放一致
+- 服务端对无限连锁触发设上限防止死循环；领奖/锻造防重复（重复领取返回 409，不重复扣款）
+- 旧存档自动兼容：裸 id 牌组在首次载入（续局/行动）时迁移为卡牌实例结构，含战斗中存档
+
+## 目录结构
+```
+backend/   FastAPI + SQLite（引擎、结算队列、会话、路由、测试）
+frontend/  Vite + React + Phaser + zustand
+```
+
+## 启动
+
+### 后端（端口 8001）
+```bash
+cd backend
+py -m pip install -r requirements.txt
+py run.py
+```
+
+### 前端（端口 5173，代理 /api → 8001）
+```bash
+cd frontend
+npm install
+npm run dev
+```
+浏览器打开 http://localhost:5173
+
+## 测试（后端）
+```bash
+cd backend
+$env:PYTHONPATH="."; $env:PYTHONDONTWRITEBYTECODE="1"
+py -m pytest -q tests
+```
+测试覆盖：结算队列（连锁/叠加/死亡打断）、无限连锁封顶、防重复领奖/锻造（含重复扣款）、
+失败解锁、种子+动作日志确定性回放、锻造同名卡独立成长、锻造贯通战斗/奖励/续局/回放、旧档（战斗中/非战斗）迁移。
+
+## API 摘要
+- `POST /api/runs {seed?}` 建局
+- `GET  /api/runs/{id}/resume` 续局
+- `POST /api/runs/{id}/act {action,...}` 行动（choose_node / play / end_turn / claim_reward / forge）
+- `GET  /api/runs/{id}/replay` 回放（动作日志）
+- `GET  /api/cards`、`/api/enemies`、`/api/map-preview?seed=` 元数据
+
+锻造行动：`{action:"forge", card:<卡牌实例 uid>, branch:"sharpen"|"empower"|"refine"}`，
+花费 25 金币（`forge_cost` 随视口返回）；同一锻造节点仅可锻造一次，重复请求返回 409 且不扣款，
+金币不足/非法卡牌或分支返回 400（校验先于扣款，无副作用）。
+
+## 设计要点
+- 所有战斗逻辑在服务端（唯一权威），客户端仅播放服务器返回的结算事件 → 续局/回放天然一致。
+- 结算队列：事件按插入序稳定解析，效果 → 连锁子事件；目标死亡后定向事件被剔除（死亡打断）。
+- 确定性：洗牌与敌人意图均由 `random.Random(seed)` 派生，持久化在 run 状态，回放可复现。
+- 卡牌实例：`run.card_instances` 为 `uid -> {id, forges:[分支...]}`，牌组/牌堆/手牌只存 uid；
+  引擎在打牌时用 `forging.effective_card(base, forges)` 即时换算生效卡牌（费用/数值），
+  因此锻造自动贯通奖励入牌（新 uid 独立成长）、战斗结算、续局与回放，牌组大小恒为 7。
+- 旧档兼容：缺少 `card_instances` 的存档在首次载入时迁移；战斗中存档按三堆出现序把裸 id
+  稳定映射到 uid，洗牌布局与确定性保持不变。
+- SQLite：`runs`（状态）、`battle_events`（动作日志，含 forge 行）、`profile`（解锁卡）。
